@@ -82,6 +82,10 @@ const HOLIDAYS: [string, string][] = [
 ];
 
 async function main() {
+  if (!process.env.DATABASE_URL && (process.env.VERCEL || process.env.CI)) {
+    console.error("\n✖ DATABASE_URL is not set.\n  Add it in Vercel → Project → Settings → Environment Variables (a hosted Postgres URL, e.g. Neon), then redeploy.\n");
+    process.exit(1);
+  }
   const pool = new Pool({ connectionString: process.env.DATABASE_URL ?? "postgres://prm:prm@localhost:5432/prm" });
   const db = await pool.connect();
   const today = todayISO();
