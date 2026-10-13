@@ -18,7 +18,7 @@
     "db:setup": "tsx scripts/migrate.ts && tsx scripts/seed.ts --if-empty"
   },
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "dependencies": {
     "clsx": "^2.1.1",
