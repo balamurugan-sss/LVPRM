@@ -1,0 +1,578 @@
+<title>PRM Utilization Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: icon rail + top bar + content; a guided use-case strip sits above every page. Dark-first, single committed look. */
+:root{
+  --bg:#0a0b10; --rail:#13151c; --card:#161922; --elev:#1e222d; --line:rgba(255,255,255,.07);
+  --fg:#eceef4; --muted:#949bad; --subtle:#62697c;
+  --accent:#ff8029; --brand:#568cff; --ok:#34d399; --warn:#fbbf24; --bad:#f87171; --info:#60a5fa; --violet:#a78bfa;
+  --font:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 70%,transparent);outline-offset:2px;border-radius:10px}
+.tab{font-variant-numeric:tabular-nums}
+
+.app{display:flex;min-height:100%;gap:0}
+.rail{position:sticky;top:12px;align-self:flex-start;margin:12px 0 12px 12px;width:84px;flex:none;background:var(--rail);border:1px solid var(--line);border-radius:24px;padding:18px 8px;display:flex;flex-direction:column;align-items:center;gap:18px;height:calc(100vh - 24px)}
+.logo{width:44px;height:44px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,#7dd3fc,#3b82f6);color:#0b1020;font-weight:800;box-shadow:0 10px 30px -10px rgba(56,189,248,.6)}
+.nav{display:flex;flex-direction:column;gap:6px;width:100%}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--muted);padding:4px 0;position:relative}
+.nav button .ic{width:40px;height:40px;border-radius:12px;background:color-mix(in srgb,var(--elev) 70%,transparent);display:grid;place-items:center}
+.nav button:hover{color:var(--fg)}
+.nav button.on{color:var(--fg)}
+.nav button.on .ic{background:var(--accent);color:#fff;box-shadow:0 10px 30px -10px rgba(255,128,41,.55)}
+.nav .badge{position:absolute;top:0;right:10px;min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:10px;line-height:18px;text-align:center;padding:0 4px}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.main{flex:1;min-width:0;padding:12px 28px 40px 24px}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:6px 14px}
+.crumb{color:var(--muted);display:flex;gap:8px;align-items:center}
+.crumb b{color:var(--fg);font-weight:500}
+.roles{margin-left:auto;display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px}
+.roles button{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px}
+.roles button.on{background:var(--accent);color:#fff}
+.me{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 14px 4px 4px}
+.me small{display:block;color:var(--muted);font-size:11px}
+
+.av{display:inline-grid;place-items:center;border-radius:50%;font-weight:700;color:#0b0c10;flex:none}
+
+/* Use-case stepper */
+.guide{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:22px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.guide .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle);font-weight:700}
+.steps{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.step{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;font-size:12px;color:var(--muted);background:color-mix(in srgb,var(--elev) 50%,transparent)}
+.step .n{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--elev)}
+.step.done{color:var(--ok)} .step.done .n{background:color-mix(in srgb,var(--ok) 20%,transparent)}
+.step.now{color:var(--fg);background:color-mix(in srgb,var(--accent) 14%,transparent);outline:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+.step.now .n{background:var(--accent);color:#fff}
+.hint{flex-basis:100%;color:var(--muted);font-size:13px;line-height:1.9}
+.hint .btn{margin-left:8px}
+.hint b{color:var(--fg)}
+
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 22px}
+.grid{display:grid;gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;min-width:0}
+.card h2{font-size:15px;margin:0 0 2px}
+.card .cs{color:var(--muted);font-size:12px;margin:0 0 14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sp{flex:1}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;font-weight:600;font-size:13px;transition:filter .15s}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.pri{background:var(--accent);color:#fff;box-shadow:0 10px 30px -12px rgba(255,128,41,.6)}
+.btn.pri:hover:not(:disabled){filter:brightness(1.1)}
+.btn.sec{background:var(--elev);border:1px solid var(--line)}
+.btn.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.btn.bad{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.btn.ghost{color:var(--muted)} .btn.ghost:hover{color:var(--fg);background:var(--elev)}
+.btn.sm{padding:6px 10px;font-size:12px}
+
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.chip i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-draft{background:color-mix(in srgb,var(--subtle) 20%,transparent);color:var(--muted)}
+.s-submitted{background:color-mix(in srgb,var(--info) 16%,transparent);color:var(--info)}
+.s-approved{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.s-rejected{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.s-missing{background:color-mix(in srgb,var(--subtle) 12%,transparent);color:var(--subtle)}
+
+.hero{border-radius:24px;padding:22px;color:#fff;background:linear-gradient(120deg,#ff3d3d 0%,#ff7a1a 38%,#f59e8b 70%,#8b7cf6 100%);box-shadow:0 20px 50px -20px rgba(255,100,40,.6);display:flex;flex-direction:column;justify-content:space-between;gap:22px;min-height:210px}
+.hero .big{font-size:40px;font-weight:700}
+.hero .bar{height:6px;width:190px;border-radius:9px;background:rgba(0,0,0,.2);overflow:hidden;margin-top:10px}
+.hero .bar div{height:100%;background:#fff;border-radius:9px}
+.hero .go{background:#14161d;color:#fff;border-radius:12px;padding:10px 16px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.hero .pill{background:rgba(0,0,0,.25);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600}
+.profile{background:#fff;color:#10131a;border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
+.profile .p1{padding:18px}
+.profile dl{flex:1;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;align-content:center;padding:16px 18px;background:linear-gradient(#e0f2fe,#bae6fd);font-size:12px}
+.profile dt{color:#64748b} .profile dd{margin:0;font-weight:700}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+.kpi .l{color:var(--muted);font-size:12px;font-weight:600}
+.kpi .v{font-size:26px;font-weight:700;margin-top:10px}
+.kpi .v small{font-size:13px;color:var(--muted);font-weight:600;margin-left:3px}
+.kpi .h{color:var(--subtle);font-size:11px;margin-top:6px}
+
+/* bars */
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;align-items:end;height:180px;padding-top:10px;border-bottom:1px solid var(--line);position:relative}
+.bars .b{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}
+.bars .b span{display:block;width:60%;max-width:34px;border-radius:8px;min-height:3px}
+.bars .b em{font-style:normal;font-size:11px;color:var(--muted)}
+.blabels{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;text-align:center;font-size:11px;color:var(--subtle);margin-top:6px}
+.target{position:absolute;left:0;right:0;border-top:1px dashed var(--subtle)}
+
+/* pie */
+.pie-wrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.pie{width:170px;height:170px;border-radius:50%;flex:none;position:relative}
+.legend{flex:1;min-width:180px;display:grid;gap:7px;font-size:13px}
+.legend div{display:flex;justify-content:space-between;gap:10px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}
+.legend .t{border-top:1px solid var(--line);padding-top:7px;font-weight:700}
+.seg{display:flex;background:var(--elev);border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{padding:5px 12px;border-radius:9px;font-size:12px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--accent);color:#fff}
+
+/* table */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--subtle);font-weight:600;text-align:left;padding:10px 12px;white-space:nowrap}
+td{padding:12px;border-top:1px solid var(--line);vertical-align:middle}
+td.r,th.r{text-align:right}
+tbody tr:hover{background:color-mix(in srgb,var(--elev) 40%,transparent)}
+.prog{height:6px;border-radius:6px;background:var(--elev);overflow:hidden;margin-top:6px}
+.prog div{height:100%;border-radius:6px}
+
+/* timesheet grid */
+.ts input{width:100%;min-width:56px;height:40px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,var(--elev) 70%,transparent);text-align:center;font-variant-numeric:tabular-nums}
+.ts input:disabled{opacity:.7}
+.ts input.err{border-color:var(--bad)}
+.ts th.today{color:var(--accent)}
+.ts td.hol input{background:color-mix(in srgb,var(--bad) 8%,transparent)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.note{display:flex;gap:10px;align-items:flex-start;border-radius:16px;padding:12px 14px;font-size:13px}
+.note.bad{background:color-mix(in srgb,var(--bad) 10%,transparent);border:1px solid color-mix(in srgb,var(--bad) 30%,transparent)}
+.note.ok{background:color-mix(in srgb,var(--ok) 10%,transparent);color:var(--ok)}
+.note.info{background:var(--card);border:1px solid var(--line);color:var(--muted)}
+.checks{display:grid;gap:6px;font-size:12px;margin:0;padding:0;list-style:none}
+.checks .w{color:var(--warn)} .checks .e{color:var(--bad)} .checks .g{color:var(--ok)}
+
+/* list */
+.list{display:grid;gap:10px}
+.item{display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px;background:color-mix(in srgb,var(--elev) 45%,transparent);border:1px solid var(--line)}
+.item .meta{color:var(--subtle);font-size:12px}
+.unread{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:16px;z-index:50}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;width:100%;max-width:440px}
+.modal h3{margin:0 0 6px;font-size:18px}
+.modal p{color:var(--muted);margin:0 0 14px}
+textarea,select,input[type=text]{width:100%;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,var(--elev) 70%,transparent);padding:10px 12px}
+.label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--subtle);font-weight:700;margin-bottom:6px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--elev);border:1px solid var(--line);border-radius:14px;padding:10px 16px;font-size:13px;z-index:60;box-shadow:0 20px 40px -20px #000}
+.demo{color:var(--subtle);font-size:12px;text-align:center;margin-top:28px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+
+@media (max-width:1100px){.g-home{grid-template-columns:1fr!important}}
+@media (max-width:760px){
+  .rail{position:fixed;bottom:0;top:auto;left:0;right:0;margin:0;width:auto;height:auto;flex-direction:row;border-radius:18px 18px 0 0;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:40;overflow-x:auto}
+  .rail .logo{display:none}
+  .nav{flex-direction:row;gap:2px}
+  .nav button{min-width:58px}
+  .main{padding:12px 16px 110px}
+  .roles{margin-left:0}
+  h1{font-size:24px}
+  .crumb,.guide .lbl{display:none}
+  .step:not(.now){font-size:0;gap:0;padding:6px}
+  .step:not(.now) .n{font-size:11px}
+  .toast{bottom:96px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <aside class="rail" aria-label="Main navigation">
+    <div class="logo" aria-hidden="true">P</div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <div class="crumb"><span>»</span><span>Project Resource Management</span><span>·</span><b>Utilization Tracker</b></div>
+      <div class="roles" id="roles" role="tablist" aria-label="View as"></div>
+      <div class="me" id="me"></div>
+    </header>
+    <section class="guide" id="guide" aria-label="Use case walkthrough"></section>
+    <main id="view"></main>
+    <p class="demo">Interactive preview · runs in your browser only · all people, clients and projects are fictional.</p>
+  </div>
+</div>
+<div id="modal"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+const ICONS={
+  home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
+  check:'<path d="M3 13l4 4L17 7"/><path d="M11 17l10-10"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  layers:'<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/>'
+};
+const ic=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
+
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DATES=['12 Oct','13 Oct','14 Oct','15 Oct','16 Oct','17 Oct','18 Oct'];
+const TODAY=1; // Tuesday
+const PEOPLE={
+  arjun:{name:'Arjun Menon',id:'D1101',title:'Senior Analyst',role:'Employee',dept:'Analytics Delivery',color:'#facc15'},
+  priya:{name:'Priya Raman',id:'D1001',title:'Engagement Manager',role:'Manager',dept:'Analytics Delivery',color:'#f472b6'},
+  riya:{name:'Riya Kapoor',id:'D1000',title:'Resource Manager',role:'Admin',dept:'Resource Management',color:'#38bdf8'},
+  kavya:{name:'Kavya Nair',color:'#60a5fa'},rahul:{name:'Rahul Verma',color:'#fb7185'}
+};
+const PROJ={
+  'NWF-RGM':{color:'#38bdf8',billable:true},
+  'INT-COE':{color:'#f472b6',billable:false},
+  'TSP-MLOPS':{color:'#34d399',billable:true}
+};
+const ROLES=[['arjun','Employee'],['priya','Manager'],['riya','Admin']];
+
+function fresh(){
+  return {
+    as:'arjun', page:'home', pieTab:'week',
+    alloc:{arjun:[['NWF-RGM',80],['INT-COE',20]],kavya:[['NWF-RGM',75],['INT-COE',25]],rahul:[['NWF-RGM',50],['TSP-MLOPS',50]]},
+    sheet:{status:'draft',version:1,comment:null,rows:[{p:'NWF-RGM',h:[6.5,6.5,0,0,0,0,0],note:''},{p:'INT-COE',h:[1.5,1.5,0,0,0,0,0],note:''}],history:[]},
+    inbox:[
+      {key:'kavya',who:'kavya',week:'5 – 11 Oct',total:40.75,billable:30.5,projects:['NWF-RGM','INT-COE'],submitted:'10 Oct, 14:15',status:'submitted'},
+      {key:'rahul',who:'rahul',week:'5 – 11 Oct',total:41.5,billable:41.5,projects:['NWF-RGM','TSP-MLOPS'],submitted:'9 Oct, 17:15',status:'submitted'}
+    ],
+    notes:{
+      arjun:[{t:'Timesheet approved',b:'Priya Raman approved 40h for 5 – 11 Oct.',when:'12 Oct',read:false,go:'history'}],
+      priya:[{t:'Timesheet awaiting approval',b:'Kavya Nair submitted 40.75h for 5 – 11 Oct.',when:'10 Oct',read:false,go:'approvals'},
+             {t:'Timesheet awaiting approval',b:'Rahul Verma submitted 41.5h for 5 – 11 Oct.',when:'9 Oct',read:false,go:'approvals'}],
+      riya:[{t:'Weekly digest',b:'2 timesheets pending, 1 overdue across the organisation.',when:'12 Oct',read:true,go:'reports'}]
+    },
+    past:[ // Arjun's earlier weeks
+      {week:'5 – 11 Oct',total:40,billable:32,status:'approved',by:'Priya Raman'},
+      {week:'28 Sep – 4 Oct',total:32,billable:25.5,status:'approved',by:'Priya Raman',note:'2 Oct holiday'},
+      {week:'21 – 27 Sep',total:40,billable:32,status:'approved',by:'Priya Raman'},
+      {week:'14 – 20 Sep',total:40.5,billable:32.5,status:'approved',by:'Priya Raman'}
+    ],
+    stage:0
+  };
+}
+let S=fresh();
+
+const r2=n=>Math.round(n*100)/100;
+const fh=n=>Number.isInteger(r2(n))?String(r2(n)):r2(n).toFixed(2).replace(/0$/,'');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const av=(k,sz=32)=>{const p=PEOPLE[k];const ini=p.name.split(' ').map(x=>x[0]).join('');return `<span class="av" style="width:${sz}px;height:${sz}px;background:${p.color};font-size:${sz*.38}px">${ini}</span>`};
+const chip=s=>{const L={draft:'Draft',submitted:'Submitted',approved:'Approved',rejected:'Changes requested',missing:'Not started'};return `<span class="chip s-${s}"><i></i>${L[s]}</span>`};
+const dayTotals=()=>DAYS.map((_,d)=>r2(S.sheet.rows.reduce((s,r)=>s+(+r.h[d]||0),0)));
+const total=()=>r2(dayTotals().reduce((a,b)=>a+b,0));
+const billTotal=()=>r2(S.sheet.rows.filter(r=>PROJ[r.p].billable).reduce((s,r)=>s+r.h.reduce((a,b)=>a+(+b||0),0),0));
+const editable=()=>S.sheet.status==='draft'||S.sheet.status==='rejected';
+
+/* ---------- use-case stages ---------- */
+const STAGES=[
+  {t:'Log hours',as:'arjun',page:'timesheet',hint:'As <b>Arjun (Employee)</b>, enter hours for Wed–Fri in the weekly grid. Totals update as you type.'},
+  {t:'Submit',as:'arjun',page:'timesheet',hint:'Click <b>Submit for approval</b> and confirm. The week locks and Arjun’s manager is notified.'},
+  {t:'Manager reviews',as:'priya',page:'approvals',hint:'Switch to <b>Priya (Manager)</b>. Arjun’s timesheet is now in the approval inbox.'},
+  {t:'Approve / reject',as:'priya',page:'approvals',hint:'<b>Approve</b> it, or <b>Request changes</b> with a reason to see the correction loop.'},
+  {t:'Employee sees status',as:'arjun',page:'home',hint:'Back as <b>Arjun</b>: the status and a notification show the decision. If changes were requested, edit and resubmit.'},
+  {t:'Reports update',as:'priya',page:'reports',hint:'Approved hours now count in utilization. Try the <b>Week / Month / Year</b> pie analysis.'}
+];
+function stage(){
+  const st=S.sheet.status;
+  if(st==='draft') return total()<40?0:1;
+  if(st==='submitted') return S.as==='arjun'?2:3;
+  if(st==='rejected') return 4;
+  return S.stage>=5?5:4; // approved
+}
+function renderGuide(){
+  const cur=stage();
+  const steps=STAGES.map((s,i)=>`<div class="step ${i<cur?'done':i===cur?'now':''}"><span class="n">${i<cur?'✓':i+1}</span>${s.t}</div>`).join('');
+  const s=STAGES[cur];
+  const needJump=S.as!==s.as||S.page!==s.page;
+  document.getElementById('guide').innerHTML=`<span class="lbl">Use case</span><div class="steps">${steps}</div>
+    <button class="btn ghost sm" data-act="reset">Reset demo</button>
+    <div class="hint">${s.hint}${needJump?` <button class="btn sec sm" data-act="jump" data-as="${s.as}" data-page="${s.page}">Take me there →</button>`:''}</div>`;
+}
+
+/* ---------- shell ---------- */
+function navItems(){
+  const n=[['home','Home','home'],['timesheet','Timesheet','clock'],['history','History','history']];
+  if(S.as!=='arjun') n.push(['approvals','Approvals','check'],['reports','Reports','chart']);
+  n.push(['allocation','Allocation','layers'],['notifications','Alerts','bell']);
+  return n;
+}
+function renderShell(){
+  const pend=S.inbox.filter(x=>x.status==='submitted').length;
+  const unread=S.notes[S.as].filter(n=>!n.read).length;
+  document.getElementById('nav').innerHTML=navItems().map(([k,l,i])=>{
+    const b=k==='approvals'&&pend?pend:k==='notifications'&&unread?unread:0;
+    return `<button class="${S.page===k?'on':''}" data-page="${k}" aria-current="${S.page===k?'page':'false'}"><span class="ic">${ic(i)}</span>${l}${b?`<span class="badge">${b}</span>`:''}</button>`;
+  }).join('');
+  document.getElementById('roles').innerHTML=ROLES.map(([k,l])=>`<button role="tab" aria-selected="${S.as===k}" class="${S.as===k?'on':''}" data-as="${k}">${l}</button>`).join('');
+  const p=PEOPLE[S.as];
+  document.getElementById('me').innerHTML=`${av(S.as,32)}<div><div style="font-weight:600">${p.name}</div><small>${p.role} · ${p.id}</small></div>`;
+}
+
+/* ---------- pages ---------- */
+function pieData(scope){
+  // scope: 'me' (Arjun) or 'team' (Priya's reports)
+  const curApproved=S.sheet.status==='approved', curPending=S.sheet.status==='submitted'||S.sheet.status==='draft';
+  const t=total(), b=billTotal();
+  const wk={billable:curApproved?b:0,non:curApproved?t-b:0,pending:curPending?t:0,leave:0,holiday:0,notlogged:Math.max(0,16-Math.min(16,t))};
+  const base={
+    me:{month:{billable:57.5,non:14.5,leave:0,holiday:8,notlogged:0,pending:0},year:{billable:742,non:186,leave:24,holiday:56,notlogged:6,pending:0}},
+    team:{month:{billable:121,non:33.25,leave:8,holiday:24,notlogged:4,pending:82.25},year:{billable:2016,non:512,leave:72,holiday:168,notlogged:22,pending:82.25}}
+  }[scope];
+  const team=scope==='team'?{billable:0,non:0,pending:t+0,leave:0,holiday:0,notlogged:Math.max(0,48-t)}:null;
+  const week=scope==='me'?wk:{billable:wk.billable,non:wk.non,pending:(curPending?t:0)+32,leave:0,holiday:0,notlogged:team.notlogged};
+  const add=(a,w)=>Object.fromEntries(Object.keys(a).map(k=>[k,r2(a[k]+(w[k]||0))]));
+  return {week:{label:'12 – 18 Oct 2026',v:week},month:{label:'October 2026',v:add(base.month,wk)},year:{label:'FY 2026-27 (Apr–Mar)',v:add(base.year,wk)}};
+}
+function pieCard(scope,title){
+  const d=pieData(scope)[S.pieTab];
+  const cats=[['Billable','billable','#ff8029'],['Non-billable','non','#a78bfa'],['Pending / draft','pending','#60a5fa'],['Leave','leave','#fbbf24'],['Holiday','holiday','#f87171'],['Not logged','notlogged','#475569']];
+  const tot=cats.reduce((s,c)=>s+d.v[c[1]],0)||1;
+  let acc=0;const stops=cats.filter(c=>d.v[c[1]]>0).map(c=>{const a=acc/tot*360;acc+=d.v[c[1]];return `${c[2]} ${a}deg ${acc/tot*360}deg`});
+  const bg=stops.length?`conic-gradient(${stops.join(',')})`:'var(--elev)';
+  return `<section class="card"><div class="row"><div><h2>${title}</h2><p class="cs" style="margin:0">${d.label}</p></div><span class="sp"></span>
+    <div class="seg" role="tablist">${['week','month','year'].map(k=>`<button role="tab" aria-selected="${S.pieTab===k}" class="${S.pieTab===k?'on':''}" data-pie="${k}">${k[0].toUpperCase()+k.slice(1)}</button>`).join('')}</div></div>
+    <div class="pie-wrap" style="margin-top:16px"><div class="pie" style="background:${bg}" role="img" aria-label="Pie chart of hours by category"></div>
+    <div class="legend">${cats.map(c=>`<div><span><i style="background:${c[2]}"></i>${c[0]}</span><span class="tab" style="color:var(--muted)">${fh(d.v[c[1]])}h · ${Math.round(d.v[c[1]]/tot*100)}%</span></div>`).join('')}
+    <div class="t"><span>Total</span><span class="tab">${fh(tot)}h</span></div></div></div></section>`;
+}
+function dailyBars(){
+  const t=dayTotals();const max=12;
+  return `<div class="bars"><div class="target" style="bottom:${8/max*100}%" title="8h standard"></div>${t.map((h,i)=>`<div class="b"><em class="tab">${h?fh(h):''}</em><span style="height:${Math.max(2,h/max*100)}%;background:${h>=8?'var(--accent)':h>0?'#f59e0b':'var(--elev)'}"></span></div>`).join('')}</div>
+  <div class="blabels">${DAYS.map((d,i)=>`<span style="${i===TODAY?'color:var(--accent)':''}">${d} ${DATES[i].split(' ')[0]}</span>`).join('')}</div>`;
+}
+
+function pageHome(){
+  const p=PEOPLE[S.as];
+  if(S.as==='arjun'){
+    const t=total(),st=S.sheet.status;
+    const banner=st==='rejected'?`<div class="note bad" style="margin-bottom:18px"><b style="color:var(--bad)">!</b><div><b>Changes requested by Priya Raman</b><div style="color:var(--muted)">“${esc(S.sheet.comment)}”</div></div><span class="sp"></span><button class="btn sec sm" data-page="timesheet">Fix & resubmit</button></div>`
+      :st==='approved'?`<div class="note ok" style="margin-bottom:18px">✓ This week’s timesheet was approved by Priya Raman. The hours now count in utilization reports.</div>`:'';
+    const util=st==='approved'?78.4:74.5;
+    return `<h1>Hello, Arjun</h1><p class="sub">It’s Tuesday, 13 Oct 2026. You’ve logged ${fh(t)}h of 40h this week.</p>${banner}
+    <div class="grid g-home" style="grid-template-columns:1.3fr 1fr 1fr">
+      <section class="hero"><div><div class="row"><b style="font-size:18px">This week’s timesheet</b><span class="sp"></span><span class="pill">${{draft:'Draft',submitted:'Submitted',approved:'Approved',rejected:'Changes requested'}[st]}</span></div>
+        <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;margin-top:4px">12 Oct – 18 Oct 2026 · due 20 Oct</div></div>
+        <div class="row" style="align-items:flex-end"><div><div class="big tab">${fh(t)}<span style="font-size:18px;opacity:.75"> / 40h</span></div><div class="bar"><div style="width:${Math.min(100,t/40*100)}%"></div></div></div><span class="sp"></span>
+        <button class="go" data-page="timesheet">${editable()?'Log hours →':'View timesheet →'}</button></div></section>
+      <section class="profile"><div class="p1"><div style="font-size:12px;color:#475569;font-weight:600">● ${p.dept}</div>
+        <div class="row" style="margin-top:12px">${av('arjun',44)}<div><div style="font-size:20px;font-weight:700">${p.name}</div><div style="font-size:12px;color:#0369a1;font-weight:600">${p.title}</div></div></div></div>
+        <dl><div><dt>Employee ID</dt><dd>${p.id}</dd></div><div><dt>Reporting manager</dt><dd>Priya Raman</dd></div><div><dt>Allocations</dt><dd>${S.alloc.arjun.length}</dd></div><div><dt>Billing status</dt><dd>Billable · ${S.alloc.arjun.filter(a=>PROJ[a[0]].billable).reduce((s,a)=>s+a[1],0)}%</dd></div></dl></section>
+      <div class="kpis">
+        ${kpi('Compliance','100%','Last 12 weeks on time','var(--ok)')}${kpi('Billable util.',util+'%','Target 80% · 8 wks','var(--warn)')}
+        ${kpi('Approved',fh(st==='approved'?272.5+t:272.5),'Last 8 weeks','var(--ok)','h')}${kpi('Pending',fh(st==='submitted'?t:0),'Awaiting manager','var(--info)','h')}
+      </div>
+    </div>
+    <div class="grid g-home" style="grid-template-columns:1.4fr 1fr;margin-top:18px">
+      <section class="card"><div class="row"><div><h2>Utilization summary</h2><p class="cs" style="margin:0">Daily hours vs 8h standard (dashed line)</p></div><span class="sp"></span><button class="btn sec sm" data-page="timesheet">Add / edit timesheet</button></div><div style="margin-top:14px">${dailyBars()}</div></section>
+      ${pieCard('me','My time analysis')}
+    </div>`;
+  }
+  const pend=S.inbox.filter(x=>x.status==='submitted');
+  return `<h1>Hello, ${p.name.split(' ')[0]}</h1><p class="sub">It’s Tuesday, 13 Oct 2026. ${pend.length} timesheet${pend.length===1?'':'s'} waiting for your approval.</p>
+  <div class="grid g-home" style="grid-template-columns:1fr 1.4fr">
+    <div class="grid">
+      <div class="kpis">${kpi('Awaiting approval',pend.length,fh(pend.reduce((s,x)=>s+x.total,0))+'h submitted','var(--info)')}${kpi('Team billable util.',teamUtil()+'%',(S.as==='riya'?'Organisation':'3 people')+' · 4 weeks','var(--warn)')}
+      ${kpi('Overdue submitters','1','Rahul Verma · 28 Sep week','var(--warn)')}${kpi('Team approved',fh(teamApproved()),'Last 4 weeks','var(--ok)','h')}</div>
+      ${pieCard('team','Team time analysis')}
+    </div>
+    <section class="card"><div class="row"><div><h2>Approval inbox (${String(pend.length).padStart(2,'0')})</h2><p class="cs" style="margin:0">Oldest submissions first</p></div><span class="sp"></span><button class="btn sec sm" data-page="approvals">Review all</button></div>
+      <div class="list" style="margin-top:14px">${pend.length?pend.map(x=>`<div class="item">${av(x.who,34)}<div style="flex:1;min-width:0"><b>${PEOPLE[x.who].name}</b><div class="meta">${x.week} · submitted ${x.submitted}</div></div><b class="tab">${fh(x.total)}h</b>${chip('submitted')}</div>`).join(''):'<p style="color:var(--muted)">Nothing waiting for you.</p>'}</div></section>
+  </div>`;
+}
+const kpi=(l,v,h,c,u='')=>`<div class="kpi"><div class="l">${l}</div><div class="v tab" style="color:${c}">${v}${u?`<small>${u}</small>`:''}</div><div class="h">${h}</div></div>`;
+
+function pageTimesheet(){
+  if(S.as!=='arjun') return `<h1>Weekly timesheet</h1><p class="sub">Managers and admins log their own hours here too. Switch to <b>Employee</b> to follow the use case.</p><button class="btn pri" data-as="arjun">View as Arjun (Employee)</button>`;
+  const st=S.sheet.status,ed=editable(),t=dayTotals(),tot=total();
+  const warn=[];for(let d=0;d<5;d++){if(t[d]===0)warn.push(`${DAYS[d]}: no hours entered`);else if(t[d]<8)warn.push(`${DAYS[d]}: ${fh(t[d])}h is below 8h`);}
+  const errs=t.map((h,d)=>h>12?`${DAYS[d]}: ${fh(h)}h exceeds the 12h daily limit`:null).filter(Boolean);
+  const banner=st==='rejected'?`<div class="note bad" style="margin-bottom:16px"><b style="color:var(--bad)">!</b><div><b>Changes requested by Priya Raman</b><div style="color:var(--muted)">“${esc(S.sheet.comment)}”</div><div style="color:var(--subtle);font-size:12px;margin-top:4px">Update the hours and resubmit. The original submission stays in the history.</div></div></div>`
+    :st==='submitted'?`<div class="note info" style="margin-bottom:16px">🔒 Submitted — read-only while awaiting approval by Priya Raman.</div>`
+    :st==='approved'?`<div class="note ok" style="margin-bottom:16px">✓ Approved by Priya Raman. Contact an administrator if a correction is needed.</div>`:'';
+  return `<div class="row" style="align-items:flex-end;margin-bottom:18px"><div><h1>Weekly timesheet</h1><div class="row" style="margin-top:6px;color:var(--muted)">${chip(st)}<span>12 Oct – 18 Oct 2026</span>·<span>Due 20 Oct 2026</span>${S.sheet.version>1?`<span class="chip s-draft">v${S.sheet.version}</span>`:''}</div></div></div>
+  ${banner}
+  <div class="grid g-home" style="grid-template-columns:minmax(0,1fr) 290px;align-items:start">
+    <section class="card" style="padding:0">
+      <div class="row" style="padding:14px 18px;border-bottom:1px solid var(--line)"><b>Hours</b><span style="color:var(--muted)">Expected <b class="tab" style="color:var(--fg)">40h</b></span><span style="color:var(--muted)">Logged <b class="tab" style="color:${tot>=40?'var(--ok)':'var(--warn)'}" id="logged">${fh(tot)}h</b></span></div>
+      <div class="tw"><table class="ts" style="min-width:700px"><thead><tr><th>Allocation</th>${DAYS.slice(0,5).map((d,i)=>`<th class="${i===TODAY?'today':''}" style="text-align:center">${d}<div style="font-size:10px;font-weight:500">${DATES[i]}</div></th>`).join('')}<th class="r">Total</th></tr></thead>
+      <tbody>${S.sheet.rows.map((r,ri)=>`<tr><td style="white-space:nowrap"><span class="dot" style="background:${PROJ[r.p].color}"></span><b>${r.p}</b> <span class="chip ${PROJ[r.p].billable?'':'s-draft'}" style="${PROJ[r.p].billable?'background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)':''}">${PROJ[r.p].billable?'Billable':'Internal'}</span> <span style="color:var(--subtle);font-size:12px">${S.alloc.arjun.find(a=>a[0]===r.p)?.[1]??0}%</span></td>
+        ${r.h.slice(0,5).map((h,d)=>`<td><input type="number" inputmode="decimal" min="0" max="24" step="0.25" id="h-${ri}-${d}" aria-label="${r.p} ${DAYS[d]} hours" value="${h||''}" placeholder="0" ${ed?'':'disabled'} data-r="${ri}" data-d="${d}" class="${t[d]>12?'err':''}"></td>`).join('')}
+        <td class="r tab"><b id="rt-${ri}">${fh(r.h.reduce((a,b)=>a+(+b||0),0))}</b></td></tr>`).join('')}</tbody>
+      <tfoot><tr style="background:color-mix(in srgb,var(--elev) 35%,transparent)"><td><b>Daily total</b></td>${t.slice(0,5).map((h,d)=>`<td style="text-align:center"><b class="tab" id="dt-${d}" style="color:${h>12?'var(--bad)':h>=8?'var(--ok)':h>0?'var(--warn)':'var(--subtle)'}">${fh(h)}</b></td>`).join('')}<td class="r"><b class="tab" style="color:var(--accent);font-size:16px" id="wt">${fh(tot)}</b></td></tr></tfoot></table></div>
+      ${ed?`<div class="row" style="padding:14px 18px;border-top:1px solid var(--line)"><button class="btn ghost" data-act="fill">⧉ Copy last week</button><span class="sp"></span><button class="btn sec" data-act="save">Save draft</button><button class="btn pri" data-act="submit" ${errs.length||tot===0?'disabled':''}>${st==='rejected'?'Resubmit':'Submit for approval'}</button></div>`:''}
+    </section>
+    <div class="grid">
+      <section class="card"><h2>Checks</h2>${ed?`<ul class="checks" style="margin-top:10px">${errs.map(e=>`<li class="e">✖ ${e}</li>`).join('')}${warn.map(w=>`<li class="w">⚠ ${w}</li>`).join('')}${!errs.length&&!warn.length?'<li class="g">✓ Ready to submit</li>':''}</ul>`:'<p class="cs" style="margin-top:8px">Editing is locked for this week.</p>'}
+        <p class="cs" style="margin:12px 0 0;border-top:1px solid var(--line);padding-top:10px">Standard day 8h · daily limit 12h · quarter-hour steps (1.25, 7.5…). No project names or task text to type — rows come from your allocations.</p></section>
+      <section class="card"><h2>Approval history</h2>${S.sheet.history.length?`<div class="list" style="margin-top:10px">${S.sheet.history.map(h=>`<div style="font-size:13px"><span class="chip s-${h.a==='submitted'?'submitted':h.a}">${h.a}</span> <span style="color:var(--muted)">by ${h.by} · v${h.v} · ${fh(h.t)}h</span>${h.c?`<div style="color:var(--muted);font-size:12px;margin-top:4px">“${esc(h.c)}”</div>`:''}</div>`).join('')}</div>`:'<p class="cs" style="margin-top:8px">Not submitted yet.</p>'}</section>
+    </div>
+  </div>`;
+}
+
+function pageHistory(){
+  const rows=S.as==='arjun'?[{week:'12 – 18 Oct',total:total(),billable:billTotal(),status:S.sheet.status,by:S.sheet.status==='approved'||S.sheet.status==='rejected'?'Priya Raman':'—'},...S.past]
+    :[{week:'12 – 18 Oct',total:16,billable:9.5,status:'draft',by:'—'},{week:'5 – 11 Oct',total:40.5,billable:24.5,status:'approved',by:'Riya Kapoor'},{week:'28 Sep – 4 Oct',total:32,billable:19,status:'approved',by:'Riya Kapoor'}];
+  return `<h1>My timesheet history</h1><p class="sub">Every week with its status, reviewer and totals.</p>
+  <section class="card" style="padding:0"><div class="tw"><table style="min-width:640px"><thead><tr><th>Week</th><th>Status</th><th class="r">Total</th><th class="r">Billable</th><th>Reviewed by</th><th></th></tr></thead><tbody>
+  ${rows.map((r,i)=>`<tr><td><b>${r.week}</b>${r.note?`<div class="meta" style="color:var(--subtle);font-size:12px">${r.note}</div>`:''}</td><td>${chip(r.status)}</td><td class="r tab">${fh(r.total)}h</td><td class="r tab" style="color:var(--muted)">${fh(r.billable)}h</td><td style="color:var(--muted)">${r.by}</td><td class="r">${i===0&&S.as==='arjun'?`<button class="btn ghost sm" data-page="timesheet">${editable()?'Edit':'View'}</button>`:''}</td></tr>`).join('')}
+  </tbody></table></div></section>`;
+}
+
+function pageApprovals(){
+  if(S.as==='arjun') return deny();
+  const rows=S.inbox;
+  return `<h1>Approval inbox</h1><p class="sub">${S.as==='riya'?'All submitted timesheets across the organisation':'Timesheets submitted by your direct reports'} · select several to approve in bulk.</p>
+  <section class="card" style="padding:0">
+    <div class="row" style="padding:12px 18px;border-bottom:1px solid var(--line)"><span><b>${rows.length}</b> <span style="color:var(--muted)">timesheets · ${rows.filter(r=>r.status==='submitted').length} pending</span></span><span class="sp"></span>
+      <button class="btn ok sm" data-act="bulk-approve">✓ Approve selected</button><button class="btn bad sm" data-act="bulk-reject">✕ Request changes</button></div>
+    <div class="tw"><table style="min-width:820px"><thead><tr><th style="width:36px"><input type="checkbox" id="selall" aria-label="Select all pending" style="accent-color:var(--accent)"></th><th>Employee</th><th>Week</th><th>Allocations</th><th class="r">Hours</th><th>Submitted</th><th>Status</th><th></th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td><input type="checkbox" class="sel" value="${r.key}" aria-label="Select ${PEOPLE[r.who].name}" ${r.status!=='submitted'?'disabled':''} style="accent-color:var(--accent)"></td>
+      <td><div class="row" style="flex-wrap:nowrap">${av(r.who,30)}<b style="white-space:nowrap">${PEOPLE[r.who].name}</b></div></td><td style="white-space:nowrap">${r.week}${r.v>1?` <span class="chip s-draft">v${r.v}</span>`:''}</td>
+      <td>${r.projects.map(p=>`<span class="chip s-draft" style="margin:2px">${p}</span>`).join('')}</td>
+      <td class="r tab"><b>${fh(r.total)}h</b><div style="color:var(--subtle);font-size:11px">${fh(r.billable)}h billable</div></td><td style="color:var(--muted);white-space:nowrap">${r.submitted}</td><td>${chip(r.status)}</td>
+      <td class="r" style="white-space:nowrap">${r.status==='submitted'?`<button class="btn sec sm" data-act="detail" data-k="${r.key}">View</button> <button class="btn ok sm" data-act="approve" data-k="${r.key}" aria-label="Approve">✓</button> <button class="btn bad sm" data-act="reject" data-k="${r.key}" aria-label="Request changes">✕</button>`:''}</td></tr>`).join('')}
+    </tbody></table></div></section>`;
+}
+
+function teamRows(){
+  const a=S.sheet.status==='approved'?total():0,ab=S.sheet.status==='approved'?billTotal():0;
+  const k=S.inbox.find(x=>x.key==='kavya'),r=S.inbox.find(x=>x.key==='rahul');
+  return [
+    {who:'arjun',avail:160,approved:r2(120+a),bill:r2(96+ab),pending:S.sheet.status==='submitted'?total():0,overdue:0},
+    {who:'kavya',avail:152,approved:r2(111.75+(k.status==='approved'?k.total:0)),bill:r2(84+(k.status==='approved'?k.billable:0)),pending:k.status==='submitted'?k.total:0,overdue:0},
+    {who:'rahul',avail:160,approved:r2(104+(r.status==='approved'?r.total:0)),bill:r2(76+(r.status==='approved'?r.billable:0)),pending:r.status==='submitted'?r.total:0,overdue:1}
+  ].map(x=>({...x,util:r2(x.bill/x.avail*100),tutil:r2(x.approved/x.avail*100)}));
+}
+const teamUtil=()=>{const t=teamRows();return r2(t.reduce((s,x)=>s+x.bill,0)/t.reduce((s,x)=>s+x.avail,0)*100).toFixed(1)};
+const teamApproved=()=>teamRows().reduce((s,x)=>s+x.approved,0);
+
+function pageReports(){
+  if(S.as==='arjun') return deny();
+  const t=teamRows(),sum=k=>r2(t.reduce((s,x)=>s+x[k],0));
+  const tone=v=>v>=80?'var(--ok)':v>=60?'var(--warn)':'var(--bad)';
+  return `<h1>Utilization report</h1><p class="sub">Team · 21 Sep – 18 Oct 2026 (4 weeks)</p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:18px">
+    ${kpi('Approved hours',fh(sum('approved')),'Counts toward utilization','var(--ok)','h')}${kpi('Pending approval',fh(sum('pending')),'Not yet counted','var(--info)','h')}
+    ${kpi('Billable utilization',teamUtil()+'%','Target 80%','var(--warn)')}${kpi('Missing / overdue','1','week · Rahul Verma','var(--warn)')}
+  </div>
+  <div class="grid g-home" style="grid-template-columns:1.4fr 1fr">
+    <section class="card" style="padding:0"><div style="padding:18px 18px 0"><h2>People</h2><p class="cs">Billable utilization = approved billable ÷ available hours × 100</p></div>
+      <div class="tw"><table style="min-width:620px"><thead><tr><th>Employee</th><th class="r">Available</th><th class="r">Approved</th><th class="r">Billable</th><th class="r">Pending</th><th>Billable util.</th></tr></thead><tbody>
+      ${t.map(x=>`<tr><td><div class="row" style="flex-wrap:nowrap">${av(x.who,28)}<b style="white-space:nowrap">${PEOPLE[x.who].name}</b>${x.overdue?'<span class="chip" style="background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)">1 overdue</span>':''}</div></td>
+        <td class="r tab" style="color:var(--muted)">${x.avail}</td><td class="r tab">${fh(x.approved)}</td><td class="r tab">${fh(x.bill)}</td><td class="r tab" style="color:var(--info)">${x.pending?fh(x.pending):'–'}</td>
+        <td style="min-width:130px"><b class="tab" style="color:${tone(x.util)}">${x.util.toFixed(1)}%</b><div class="prog"><div style="width:${Math.min(100,x.util)}%;background:${tone(x.util)}"></div></div></td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="cs" style="padding:0 18px 16px;margin:12px 0 0">Available hours = working days × 8h, minus holidays (2 Oct) and approved leave.</p></section>
+    ${pieCard('team','Team time analysis')}
+  </div>`;
+}
+
+function pageAllocation(){
+  const admin=S.as==='riya';
+  const who=S.as==='arjun'?['arjun']:['arjun','kavya','rahul'];
+  return `<h1>Project & resource allocation</h1><p class="sub">${admin?'Drag a slider to change someone’s allocation. They get a notification.':S.as==='arjun'?'Your current allocations. Timesheet rows come from here.':'Allocation across your team.'}</p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+  ${who.map(k=>{const al=S.alloc[k],tot=al.reduce((s,a)=>s+a[1],0);return `<section class="card"><div class="row">${av(k,38)}<div style="flex:1"><b>${PEOPLE[k].name}</b><div style="color:var(--subtle);font-size:12px">${al.length} allocation${al.length>1?'s':''}</div></div>
+    <b class="tab" style="font-size:18px;color:${tot>100?'var(--bad)':tot<100?'var(--warn)':'var(--ok)'}">${tot}%</b></div>
+    <div style="display:flex;height:8px;border-radius:8px;overflow:hidden;background:var(--elev);margin:12px 0">${al.map(a=>`<div style="width:${Math.min(100,a[1])}%;background:${PROJ[a[0]].color}"></div>`).join('')}</div>
+    ${tot>100?'<p style="color:var(--bad);font-size:12px;margin:0 0 8px">Over-allocated</p>':''}
+    <div class="list">${al.map((a,i)=>`<div class="item" style="flex-wrap:wrap"><span class="dot" style="background:${PROJ[a[0]].color}"></span><b style="flex:1">${a[0]}</b><span style="color:var(--subtle);font-size:12px">${PROJ[a[0]].billable?'Billable':'Internal'} · ${fh(a[1]*0.4)}h/wk</span><b class="tab">${a[1]}%</b>
+      ${admin?`<input type="range" min="5" max="100" step="5" value="${a[1]}" id="al-${k}-${i}" data-ak="${k}" data-ai="${i}" aria-label="${PEOPLE[k].name} ${a[0]} allocation">`:''}</div>`).join('')}</div></section>`}).join('')}
+  </div>`;
+}
+
+function pageNotifications(){
+  const n=S.notes[S.as];
+  return `<div class="row" style="margin-bottom:18px"><div><h1>Notifications</h1><p class="sub" style="margin-bottom:0">${n.filter(x=>!x.read).length} unread</p></div><span class="sp"></span><button class="btn sec sm" data-act="readall">Mark all read</button></div>
+  <section class="card"><div class="list">${n.length?n.map((x,i)=>`<button class="item" style="text-align:left;width:100%" data-act="note" data-i="${i}">${x.read?'<span style="width:8px"></span>':'<span class="unread"></span>'}<div style="flex:1"><b style="${x.read?'color:var(--muted)':''}">${x.t}</b><div style="color:var(--muted);font-size:13px">${esc(x.b)}</div><div class="meta">${x.when}</div></div></button>`).join(''):'<p style="color:var(--muted)">No notifications.</p>'}</div></section>`;
+}
+const deny=()=>`<h1>Not available</h1><p class="sub">This page is for managers and admins. Switch role at the top.</p>`;
+
+/* ---------- actions ---------- */
+function notify(who,t,b,go){S.notes[who].unshift({t,b,when:'Just now',read:false,go})}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
+function modal(html){document.getElementById('modal').innerHTML=html?`<div class="scrim" role="dialog" aria-modal="true">${html}</div>`:''}
+
+function submitSheet(){
+  const t=total();
+  S.sheet.history.push({a:'submitted',by:'Arjun Menon',v:S.sheet.version,t,c:S.sheet.status==='rejected'?'Resubmitted after changes':null});
+  S.sheet.status='submitted';
+  const ex=S.inbox.find(x=>x.key==='arjun');
+  const entry={key:'arjun',who:'arjun',week:'12 – 18 Oct',total:t,billable:billTotal(),projects:S.sheet.rows.map(r=>r.p),submitted:'13 Oct, just now',status:'submitted',v:S.sheet.version};
+  if(ex)Object.assign(ex,entry);else S.inbox.unshift(entry);
+  notify('arjun','Timesheet submitted',`Your timesheet for 12 – 18 Oct (${fh(t)}h) was submitted for approval.`,'timesheet');
+  notify('priya','Timesheet awaiting approval',`Arjun Menon submitted ${fh(t)}h for 12 – 18 Oct.`,'approvals');
+  modal('');toast('Submitted. Priya Raman has been notified.');render();
+}
+function decide(keys,dec,comment){
+  keys.forEach(k=>{
+    const x=S.inbox.find(i=>i.key===k);if(!x||x.status!=='submitted')return;
+    x.status=dec==='approve'?'approved':'rejected';
+    if(k==='arjun'){
+      S.sheet.status=x.status;S.sheet.comment=dec==='reject'?comment:null;
+      S.sheet.history.push({a:x.status,by:PEOPLE[S.as].name,v:S.sheet.version,t:total(),c:comment||null});
+      if(dec==='reject')S.sheet.version++;
+      notify('arjun',dec==='approve'?'Timesheet approved':'Changes requested on your timesheet',dec==='approve'?`${PEOPLE[S.as].name} approved ${fh(total())}h for 12 – 18 Oct.`:`${PEOPLE[S.as].name}: “${comment}”. Please update and resubmit.`,dec==='approve'?'home':'timesheet');
+    }
+  });
+  modal('');toast(dec==='approve'?`${keys.length} timesheet${keys.length>1?'s':''} approved.`:'Sent back for changes. The employee was notified.');render();
+}
+function decideModal(keys,dec){
+  const names=keys.map(k=>PEOPLE[S.inbox.find(i=>i.key===k).who].name).join(', ');
+  modal(`<div class="modal"><h3>${dec==='approve'?'Approve':'Request changes'} · ${names}</h3>
+    <p>${dec==='approve'?'Approved hours count toward utilization immediately.':'The employee is notified and can edit and resubmit. A reason is required.'}</p>
+    <label class="label" for="dc">${dec==='approve'?'Comment (optional)':'Reason (required)'}</label>
+    <textarea id="dc" rows="3" placeholder="${dec==='approve'?'Looks good, thanks!':'e.g. Wednesday should be split between NWF-RGM and INT-COE.'}">${dec==='reject'?'Please log Thursday and Friday before the deadline.':''}</textarea>
+    <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn sec" data-act="close">Cancel</button><button class="btn ${dec==='approve'?'pri':'bad'}" data-act="confirm-decide" data-keys="${keys.join(',')}" data-dec="${dec}">${dec==='approve'?'Approve':'Send back'}</button></div></div>`);
+}
+function detailModal(k){
+  const x=S.inbox.find(i=>i.key===k);
+  const rows=k==='arjun'?S.sheet.rows:x.projects.map((p,i)=>({p,h:i===0?[6,6,6,6,6.5,0,0]:[2,2,2,2,2.25,0,0]}));
+  modal(`<div class="modal" style="max-width:620px"><div class="row">${av(x.who,40)}<div style="flex:1"><h3 style="margin:0">${PEOPLE[x.who].name}</h3><div style="color:var(--muted);font-size:13px">${x.week} · ${fh(x.total)}h</div></div>${chip(x.status)}</div>
+  <div class="tw" style="margin-top:14px"><table><thead><tr><th>Allocation</th>${DAYS.slice(0,5).map(d=>`<th style="text-align:center">${d}</th>`).join('')}<th class="r">Total</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td style="white-space:nowrap"><span class="dot" style="background:${PROJ[r.p].color}"></span>${r.p}</td>${r.h.slice(0,5).map(h=>`<td style="text-align:center" class="tab">${h?fh(h):'–'}</td>`).join('')}<td class="r tab"><b>${fh(r.h.reduce((a,b)=>a+(+b||0),0))}</b></td></tr>`).join('')}</tbody></table></div>
+  <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn sec" data-act="close">Close</button><button class="btn bad" data-act="reject" data-k="${k}">Request changes</button><button class="btn pri" data-act="approve" data-k="${k}">Approve</button></div></div>`);
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.as){S.as=b.dataset.as;if(b.dataset.page)S.page=b.dataset.page;else if(!navItems().some(n=>n[0]===S.page))S.page='home';render();return;}
+  if(b.dataset.page&&!b.dataset.act){S.page=b.dataset.page;modal('');render();window.scrollTo({top:0});return;}
+  if(b.dataset.pie){S.pieTab=b.dataset.pie;render();return;}
+  const a=b.dataset.act;
+  if(a==='reset'){S=fresh();modal('');render();toast('Demo reset.');}
+  if(a==='jump'){S.as=b.dataset.as;S.page=b.dataset.page;if(b.dataset.page==='reports')S.stage=5;render();}
+  if(a==='fill'){S.sheet.rows[0].h=[6.5,6.5,6.5,6.5,6.5,0,0];S.sheet.rows[1].h=[1.5,1.5,1.5,1.5,1.5,0,0];render();toast('Copied last week’s hours. Review, then submit.');}
+  if(a==='save'){toast('Draft saved.');}
+  if(a==='submit'){const w=dayTotals().slice(0,5).filter(h=>h<8).length;
+    modal(`<div class="modal"><h3>Submit timesheet?</h3><p>You are submitting <b style="color:var(--fg)">${fh(total())}h</b> for 12 – 18 Oct 2026. It will be read-only until your manager reviews it.</p>${w?`<div class="note" style="background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn);margin-bottom:12px">⚠ ${w} day${w>1?'s are':' is'} below the 8h standard.</div>`:''}<div class="row" style="justify-content:flex-end"><button class="btn sec" data-act="close">Cancel</button><button class="btn pri" data-act="confirm-submit">Confirm & submit</button></div></div>`);}
+  if(a==='confirm-submit')submitSheet();
+  if(a==='close')modal('');
+  if(a==='approve'||a==='reject')decideModal([b.dataset.k],a);
+  if(a==='detail')detailModal(b.dataset.k);
+  if(a==='bulk-approve'||a==='bulk-reject'){const keys=[...document.querySelectorAll('.sel:checked')].map(c=>c.value);if(!keys.length){toast('Select at least one pending timesheet.');return;}decideModal(keys,a==='bulk-approve'?'approve':'reject');}
+  if(a==='confirm-decide'){const c=document.getElementById('dc').value.trim();if(b.dataset.dec==='reject'&&c.length<3){toast('A reason is required to request changes.');return;}decide(b.dataset.keys.split(','),b.dataset.dec,c);}
+  if(a==='readall'){S.notes[S.as].forEach(n=>n.read=true);render();}
+  if(a==='note'){const n=S.notes[S.as][+b.dataset.i];n.read=true;S.page=n.go;render();}
+});
+document.addEventListener('change',e=>{if(e.target.id==='selall')document.querySelectorAll('.sel:not(:disabled)').forEach(c=>c.checked=e.target.checked)});
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.dataset.r!==undefined&&el.dataset.d!==undefined){
+    let v=parseFloat(el.value);if(isNaN(v)||v<0)v=0;S.sheet.rows[+el.dataset.r].h[+el.dataset.d]=v;
+    // update totals in place so focus stays in the cell
+    const t=dayTotals(),tot=total();
+    t.slice(0,5).forEach((h,d)=>{const x=document.getElementById('dt-'+d);x.textContent=fh(h);x.style.color=h>12?'var(--bad)':h>=8?'var(--ok)':h>0?'var(--warn)':'var(--subtle)'});
+    S.sheet.rows.forEach((r,ri)=>document.getElementById('rt-'+ri).textContent=fh(r.h.reduce((a,b)=>a+(+b||0),0)));
+    document.getElementById('wt').textContent=fh(tot);const lg=document.getElementById('logged');lg.textContent=fh(tot)+'h';lg.style.color=tot>=40?'var(--ok)':'var(--warn)';
+    clearTimeout(window._rt);window._rt=setTimeout(()=>{const id=document.activeElement?.id;render();if(id){const n=document.getElementById(id);if(n){n.focus();const L=n.value.length;try{n.setSelectionRange(L,L)}catch{}}}},700);
+  }
+  if(el.dataset.ak){const k=el.dataset.ak,i=+el.dataset.ai;S.alloc[k][i][1]=+el.value;clearTimeout(window._at);window._at=setTimeout(()=>{if(k==='arjun')notify('arjun','Allocation updated',`Your ${S.alloc.arjun[i][0]} allocation is now ${el.value}%.`,'allocation');render();const n=document.getElementById(`al-${k}-${i}`);n&&n.focus()},400);}
+});
+
+function render(){
+  if(S.page==='reports'&&S.sheet.status==='approved')S.stage=5;
+  renderShell();renderGuide();
+  const P={home:pageHome,timesheet:pageTimesheet,history:pageHistory,approvals:pageApprovals,reports:pageReports,allocation:pageAllocation,notifications:pageNotifications};
+  document.getElementById('view').innerHTML=(P[S.page]||pageHome)();
+  if(S.page==='reports'&&S.sheet.status==='approved')S.stage=5;
+}
+render();
+</script>
