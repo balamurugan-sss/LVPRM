@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens. Dark is the default look; light is available via the theme toggle. */
+:root,
+[data-theme="dark"] {
+  --bg: 10 11 16;
+  --rail: 19 21 28;
+  --panel: 17 19 26;
+  --card: 22 25 34;
+  --elev: 30 34 45;
+  --line: 255 255 255;
+  --fg: 236 238 244;
+  --muted: 148 155 173;
+  --subtle: 98 105 124;
+  --accent: 255 128 41;
+  --brand: 86 140 255;
+  --ok: 52 211 153;
+  --warn: 251 191 36;
+  --bad: 248 113 113;
+  --info: 96 165 250;
+  --line-alpha: 0.07;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: 243 245 249;
+  --rail: 255 255 255;
+  --panel: 255 255 255;
+  --card: 255 255 255;
+  --elev: 241 243 248;
+  --line: 15 23 42;
+  --fg: 17 24 39;
+  --muted: 89 99 118;
+  --subtle: 140 148 165;
+  --accent: 234 102 12;
+  --brand: 37 99 235;
+  --ok: 5 150 105;
+  --warn: 180 120 0;
+  --bad: 220 38 38;
+  --info: 37 99 235;
+  --line-alpha: 0.09;
+  color-scheme: light;
+}
+
+html, body { background: rgb(var(--bg)); color: rgb(var(--fg)); }
+body { font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; }
+
+@layer components {
+  .hairline { border-color: rgb(var(--line) / var(--line-alpha)); }
+  .card {
+    @apply rounded-2xl border bg-card shadow-card;
+    border-color: rgb(var(--line) / var(--line-alpha));
+  }
+  .card-pad { @apply p-5; }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition
+      disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60;
+  }
+  .btn-primary { @apply btn bg-accent text-white hover:brightness-110 shadow-glow; }
+  .btn-secondary { @apply btn border bg-elev text-fg hover:bg-elev/70; border-color: rgb(var(--line) / var(--line-alpha)); }
+  .btn-ghost { @apply btn text-muted hover:bg-elev hover:text-fg; }
+  .btn-danger { @apply btn bg-bad/15 text-bad hover:bg-bad/25; }
+  .btn-ok { @apply btn bg-ok/15 text-ok hover:bg-ok/25; }
+  .input {
+    @apply w-full rounded-xl border bg-elev/60 px-3 py-2 text-sm text-fg placeholder:text-subtle
+      focus:outline-none focus:ring-2 focus:ring-accent/50;
+    border-color: rgb(var(--line) / var(--line-alpha));
+  }
+  .label { @apply mb-1 block text-xs font-medium uppercase tracking-wide text-subtle; }
+  .table-base { @apply w-full text-left text-sm; }
+  .table-base th { @apply whitespace-nowrap px-4 py-3 text-xs font-medium uppercase tracking-wide text-subtle; }
+  .table-base td { @apply px-4 py-3 align-middle; }
+  .table-base tbody tr { @apply border-t transition-colors hover:bg-elev/40; border-color: rgb(var(--line) / var(--line-alpha)); }
+  .chip { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  .divider { @apply border-t; border-color: rgb(var(--line) / var(--line-alpha)); }
+}
+
+/* Numeric inputs in the timesheet grid */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+
+.scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: rgb(var(--line) / 0.12); border-radius: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "lvprm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PRM \u2014 Project Resource Management & Utilization Tracker (MVP)",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:reset": "tsx scripts/migrate.ts --reset && tsx scripts/seed.ts",
+    "test": "tsx --test tests/unit/*.test.ts",
+    "test:e2e": "tsx tests/e2e/workflow.ts",
+    "vercel-build": "tsx scripts/migrate.ts && tsx scripts/seed.ts --if-empty && next build",
+    "db:setup": "tsx scripts/migrate.ts && tsx scripts/seed.ts --if-empty"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.544.0",
+    "next": "^15.5.27",
+    "pg": "^8.16.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "recharts": "^3.2.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.27",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
